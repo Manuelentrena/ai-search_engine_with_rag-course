@@ -1,6 +1,6 @@
 services:
   poc_postgres_pgvector:
-    image: pgvector/pgvector:0.7.4-pg16
+    image: pgvector/pgvector:0.7.4-pg14
     restart: always
     environment:
       POSTGRES_DB: postgres
