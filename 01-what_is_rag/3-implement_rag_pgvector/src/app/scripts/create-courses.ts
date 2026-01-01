@@ -1,43 +1,52 @@
 /* eslint-disable no-console */
 import "reflect-metadata";
 
-import { OllamaEmbeddings } from "@langchain/ollama";
+import dotenv from "dotenv";
 
+import { OpenAIEmbeddingsService } from "../OpenAIEmbeddings";
 import { PostgresConnection } from "../PostgresConnection";
 
 import jsonCourses from "./courses.json";
 
+dotenv.config();
+
 async function main(
 	pgConnection: PostgresConnection,
-	embeddingsGenerator: OllamaEmbeddings,
+	embeddingsGenerator: OpenAIEmbeddingsService,
 ): Promise<void> {
 	await Promise.all(
 		jsonCourses.map(async (jsonCourse) => {
-			const [embedding] = await embeddingsGenerator.embedDocuments([
+			// Genera el embedding usando la API de OpenAI
+			const embedding = await embeddingsGenerator.embedQuery(
 				jsonCourse.name,
-			]);
+			);
 
+			// Inserta en PostgreSQL
 			await pgConnection.sql`
-				INSERT INTO mooc.courses (id, name, embedding)
-				VALUES (${jsonCourse.id}, ${jsonCourse.name}, ${JSON.stringify(embedding)});
-			`;
+        INSERT INTO mooc.courses (id, name, embedding)
+        VALUES (${jsonCourse.id}, ${jsonCourse.name}, ${JSON.stringify(embedding)});
+      `;
 		}),
 	);
 }
 
+// Conexión a PostgreSQL usando variables de entorno
 const pgConnection = new PostgresConnection(
-	"localhost",
-	5432,
-	"codely",
-	"c0d3ly7v",
-	"postgres",
+	// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+	process.env.POSTGRES_HOST!,
+	Number(process.env.POSTGRES_PORT),
+	// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+	process.env.POSTGRES_USER!,
+	// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+	process.env.POSTGRES_PASSWORD!,
+	// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+	process.env.POSTGRES_DB!,
 );
 
-const embeddingsGenerator = new OllamaEmbeddings({
-	model: "nomic-embed-text",
-	baseUrl: "http://localhost:11434",
-});
+// Configuración de OpenAI Embeddings usando API Key
+const embeddingsGenerator = new OpenAIEmbeddingsService();
 
+// Ejecutar script
 main(pgConnection, embeddingsGenerator)
 	.catch((error) => {
 		console.error(error);
@@ -46,6 +55,5 @@ main(pgConnection, embeddingsGenerator)
 	.finally(async () => {
 		await pgConnection.end();
 		console.log("Done!");
-
 		process.exit(0);
 	});
