@@ -23,20 +23,4 @@ export class PostgresConnection {
 	async end(): Promise<void> {
 		await this.sql.end();
 	}
-
-	async truncateAll(): Promise<void> {
-		await this.sql`DO
-$$
-DECLARE
-    r RECORD;
-BEGIN
-    FOR r IN (SELECT schemaname, tablename
-              FROM pg_tables
-              WHERE schemaname IN ('shop', 'shared', 'product'))
-    LOOP
-        EXECUTE 'TRUNCATE TABLE ' || quote_ident(r.schemaname) || '.' || quote_ident(r.tablename) || ' CASCADE';
-    END LOOP;
-END
-$$;`;
-	}
 }
