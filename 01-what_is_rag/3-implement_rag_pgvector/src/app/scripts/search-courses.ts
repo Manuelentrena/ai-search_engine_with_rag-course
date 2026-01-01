@@ -16,12 +16,14 @@ async function main(
 	// Genera el embedding usando la API de OpenAI
 	const embedding = await embeddingsGenerator.embedQuery(query);
 
+	const embeddingVector = `[${embedding.join(",")}]`;
+
 	const results = await connection.sql`
-		SELECT name
-		FROM mooc.courses
-		ORDER BY (embedding <=> ${embedding})
-		LIMIT 3;
-	`;
+  SELECT name
+  FROM mooc.courses
+  ORDER BY embedding <=> ${embeddingVector}::vector
+  LIMIT 3;
+`;
 
 	console.log(`For the query "${query}" the results are:`, results);
 }
