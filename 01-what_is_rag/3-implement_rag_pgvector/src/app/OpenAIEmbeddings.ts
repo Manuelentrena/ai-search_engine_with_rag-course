@@ -1,5 +1,6 @@
 import "reflect-metadata";
 
+// eslint-disable-next-line import/no-unresolved
 import { OpenAIEmbeddings } from "@langchain/openai";
 import dotenv from "dotenv";
 
