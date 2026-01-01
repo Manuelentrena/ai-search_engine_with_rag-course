@@ -1,18 +1,20 @@
 /* eslint-disable no-console */
 import "reflect-metadata";
 
-import { OllamaEmbeddings } from "@langchain/ollama";
+import dotenv from "dotenv";
 
+import { OpenAIEmbeddingsService } from "../OpenAIEmbeddings";
 import { PostgresConnection } from "../PostgresConnection";
+
+dotenv.config();
 
 async function main(
 	query: string,
 	connection: PostgresConnection,
-	embeddingsGenerator: OllamaEmbeddings,
+	embeddingsGenerator: OpenAIEmbeddingsService,
 ): Promise<void> {
-	const embedding = JSON.stringify(
-		await embeddingsGenerator.embedQuery(query),
-	);
+	// Genera el embedding usando la API de OpenAI
+	const embedding = await embeddingsGenerator.embedQuery(query);
 
 	const results = await connection.sql`
 		SELECT name
@@ -25,16 +27,19 @@ async function main(
 }
 
 const pgConnection = new PostgresConnection(
-	"localhost",
-	5432,
-	"codely",
-	"c0d3ly7v",
-	"postgres",
+	// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+	process.env.POSTGRES_HOST!,
+	Number(process.env.POSTGRES_PORT),
+	// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+	process.env.POSTGRES_USER!,
+	// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+	process.env.POSTGRES_PASSWORD!,
+	// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+	process.env.POSTGRES_DB!,
 );
-const embeddingsGenerator = new OllamaEmbeddings({
-	model: "nomic-embed-text",
-	baseUrl: "http://localhost:11434",
-});
+
+// Configuración de OpenAI Embeddings usando API Key
+const embeddingsGenerator = new OpenAIEmbeddingsService();
 
 main(process.argv[2], pgConnection, embeddingsGenerator)
 	.catch(console.error)
