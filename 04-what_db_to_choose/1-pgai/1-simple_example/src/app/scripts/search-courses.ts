@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import "dotenv/config";
 import "reflect-metadata";
 
 import { PostgresConnection } from "../PostgresConnection";
@@ -12,7 +13,7 @@ async function main(
 			name,
 			summary,
 			categories,
-			embedding <=>  ai.ollama_embed('nomic-embed-text', ${query}, host => 'http://host.docker.internal:11434') as distance
+			embedding <=>  ai.openai_embed('text-embedding-3-small', ${query}, dimensions=>768) as distance
 		FROM mooc.courses_embedding
 		ORDER BY distance
 		LIMIT 3;
@@ -22,11 +23,11 @@ async function main(
 }
 
 const pgConnection = new PostgresConnection(
-	"localhost",
-	5432,
-	"codely",
-	"c0d3ly7v",
-	"postgres",
+	process.env.POSTGRES_HOST ?? "localhost",
+	Number(process.env.POSTGRES_PORT ?? 5432),
+	process.env.POSTGRES_USER ?? "codely",
+	process.env.POSTGRES_PASSWORD ?? "c0d3ly7v",
+	process.env.POSTGRES_DB ?? "postgres",
 );
 
 main(process.argv[2], pgConnection)
