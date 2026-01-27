@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import "dotenv/config";
 import "reflect-metadata";
 
 import {
@@ -6,7 +7,7 @@ import {
 	PGVectorStore,
 } from "@langchain/community/vectorstores/pgvector";
 import { Document } from "@langchain/core/documents";
-import { OllamaEmbeddings } from "@langchain/ollama";
+import { OpenAIEmbeddings } from "@langchain/openai";
 import { PoolConfig } from "pg";
 import { chromium } from "playwright";
 
@@ -98,18 +99,18 @@ const courseUrls = [
 ];
 
 const vectorStore = PGVectorStore.initialize(
-	new OllamaEmbeddings({
-		model: "nomic-embed-text",
-		baseUrl: "http://localhost:11434",
+	new OpenAIEmbeddings({
+		apiKey: process.env.OPENAI_API_KEY,
+		model: "text-embedding-3-large",
 	}),
 	{
 		postgresConnectionOptions: {
 			type: "postgres",
-			host: "localhost",
-			port: 5432,
-			user: "codely",
-			password: "c0d3ly7v",
-			database: "postgres",
+			host: process.env.POSTGRES_HOST,
+			port: Number(process.env.POSTGRES_PORT),
+			user: process.env.POSTGRES_USER,
+			password: process.env.POSTGRES_PASSWORD,
+			database: process.env.POSTGRES_DB,
 		} as PoolConfig,
 		tableName: "mooc.courses",
 		columns: {
