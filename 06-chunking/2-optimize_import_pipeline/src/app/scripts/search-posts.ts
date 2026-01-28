@@ -1,20 +1,25 @@
 /* eslint-disable no-console */
+import "dotenv/config";
 import "reflect-metadata";
 
 import {
 	DistanceStrategy,
 	PGVectorStore,
 } from "@langchain/community/vectorstores/pgvector";
+import { Document } from "@langchain/core/documents";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import {
 	RunnablePassthrough,
 	RunnableSequence,
 } from "@langchain/core/runnables";
-import { ChatOllama, OllamaEmbeddings } from "@langchain/ollama";
+import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 import { pull } from "langchain/hub";
-import { formatDocumentsAsString } from "langchain/util/document";
 import { PoolConfig } from "pg";
+
+function formatDocumentsAsString(docs: Document[]): string {
+	return docs.map((doc) => doc.pageContent).join("\n\n");
+}
 
 async function main(
 	query: string,
@@ -28,7 +33,11 @@ async function main(
 			question: new RunnablePassthrough(),
 		},
 		await pull<ChatPromptTemplate>("rlm/rag-prompt"),
-		new ChatOllama({ model: "llama3.1:8b", temperature: 1 }),
+		new ChatOpenAI({
+			apiKey: process.env.OPENAI_API_KEY,
+			model: "gpt-4o-mini",
+			temperature: 0,
+		}),
 		new StringOutputParser(),
 	]);
 
@@ -40,18 +49,18 @@ async function main(
 }
 
 const vectorStore = PGVectorStore.initialize(
-	new OllamaEmbeddings({
-		model: "nomic-embed-text",
-		baseUrl: "http://localhost:11434",
+	new OpenAIEmbeddings({
+		apiKey: process.env.OPENAI_API_KEY,
+		model: "text-embedding-3-large",
 	}),
 	{
 		postgresConnectionOptions: {
 			type: "postgres",
-			host: "localhost",
-			port: 5432,
-			user: "codely",
-			password: "c0d3ly7v",
-			database: "postgres",
+			host: process.env.POSTGRES_HOST,
+			port: Number(process.env.POSTGRES_PORT),
+			user: process.env.POSTGRES_USER,
+			password: process.env.POSTGRES_PASSWORD,
+			database: process.env.POSTGRES_DB,
 		} as PoolConfig,
 		tableName: "mooc.posts",
 		columns: {
